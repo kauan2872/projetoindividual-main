@@ -66,8 +66,9 @@ class GameCollection {
   }
 
   createGame(id) {
-    if (this._games[id]) return false;
-    this._games[id] = new Game(id, this);
+    if (this._games[game]) return false;
+    const game = new Game(id, this);
+    this._games[id] = game;
     return true;
   }
 
