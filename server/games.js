@@ -62,16 +62,19 @@ class GameCollection {
   }
 
   getGame(id) {
+    if (typeof id !== 'string' || !id) return undefined;
     return this._games[id];
   }
 
   createGame(id) {
+    if (typeof id !== 'string' || !id) return false;
     if (this._games[id]) return false;
     this._games[id] = new Game(id, this);
     return true;
   }
 
   removeGame(id) {
+    if (typeof id !== 'string' || !id) return false;
     if (this._games[id]) {
       delete this._games[id];
       return true;
