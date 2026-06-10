@@ -6,16 +6,62 @@
     <script src="src/mk.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="styles/styles.css" />
+    <style>
+        #mode-select {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            z-index: 999;
+        }
+        #mode-select h2 { margin-bottom: 20px; letter-spacing: 4px; }
+        .mode-btn {
+            margin: 8px;
+            padding: 12px 32px;
+            font-size: 16px;
+            font-family: monospace;
+            background: #111;
+            color: #fff;
+            border: 2px solid #555;
+            cursor: pointer;
+            width: 280px;
+        }
+        .mode-btn:hover { border-color: #fff; background: #222; }
+        #network-options { display: none; margin-top: 16px; text-align: center; }
+        #network-options input {
+            padding: 8px; font-size: 14px; font-family: monospace;
+            background: #111; color: #fff; border: 1px solid #555;
+            width: 200px; margin-bottom: 8px; display: block;
+        }
+        #network-options label { font-size: 13px; margin-bottom: 6px; display: block; }
+    </style>
 </head>
 <body>
+    <div id="mode-select">
+        <h2>MK.JS — SELECT MODE</h2>
+        <button class="mode-btn" onclick="startMode('basic')">Single Player (vs AI)</button>
+        <button class="mode-btn" onclick="startMode('multiplayer')">Local Multiplayer (same keyboard)</button>
+        <button class="mode-btn" onclick="showNetworkOptions()">Network Multiplayer</button>
+        <button class="mode-btn" onclick="startMode('webcaminput')">Webcam Input</button>
+
+        <div id="network-options">
+            <label>Game name:</label>
+            <input id="gameName" type="text" placeholder="ex: sala1" />
+            <label><input type="radio" name="role" value="host" checked /> Host (create game)</label>
+            <label><input type="radio" name="role" value="guest" /> Guest (join game)</label>
+            <button class="mode-btn" onclick="startNetwork()" style="margin-top:10px;">Connect</button>
+        </div>
+    </div>
+
     <table>
     <thead>
-        <th>
-            Arena
-        </th>
-        <th>
-            Webcam
-        </th>
+        <th>Arena</th>
+        <th>Webcam</th>
     </thead>
     <tbody>
         <tr>
@@ -27,97 +73,86 @@
                         <div id="player2Name" class="playerName">Kano</div>
                         <div id="player2LifeBar" class="lifebar"><div class="life" id="player2Life"></div></div>
                     </div>
-                    <div id="arena">
-                    </div>
-                    <div id="loading">
-                        <span class="loadingLabel">Loading...</span>
-                    </div>
+                    <div id="arena"></div>
+                    <div id="loading"><span class="loadingLabel">Loading...</span></div>
                 </div>
             </td>
-            <td id="webcam-parent">
-            </td>
+            <td id="webcam-parent"></td>
         </tr>
         <tr>
             <td colspan="2">
                 <h1>Instructions</h1>
-                <p>
-                    <ul class="instructions-list">
-                        <li>For playing with gesture recognition you need Google Chrome 22+ or Firefox 19+.</li>
-                        <li>Choose proper place to position your computer. I recommend you to use white wall as background and dark clothes for best contrast.</li>
-                        <li>Stay outside the scope of the webcam. It needs to capture the background behind you at first place.</li>
-                        <li>Allow to the web page to use your webcam.</li>
-                        <li>If the webcam canvas is black then you can start playing otherwise restart and try again.</li>
-                        <li>Stay in about 2.5 meters away from your computer in the middle of the view zone.</li>
-                        <li>For walking left stay in the left side of the webcam view region and right if you want to walk right. If you want to stop just go back in the middle.</li>
-                        <li>Raise your left or right arm to punch.</li>
-                        <li>Raise your left or right leg to kick.</li>
-                        <li>Squat and your fighter will squat too.</li>
-                        <li>Squat and punch for squat low punch attack.</li>
-                        <li>Enjoy!</li>
-                    </ul>
-                </p>
+                <ul class="instructions-list">
+                    <li><b>Single Player:</b> Arrow keys to move, A/S/D/Z/X/C to attack.</li>
+                    <li><b>Local Multiplayer:</b> Player 1 uses left keys, Player 2 uses right keys.</li>
+                    <li><b>Network:</b> One player creates the game (host), the other joins with the same name.</li>
+                    <li><b>Webcam:</b> Raise arms to punch, legs to kick. Use a plain background for best results.</li>
+                </ul>
             </td>
         </tr>
     </tbody>
     </table>
-    <div class="manual">
-    </div>
+
     <script>
         (function () {
-
-            function $(id) {
-                return document.getElementById(id);
-            }
+            function $(id) { return document.getElementById(id); }
 
             function setLife(container, life) {
                 container.style.width = life + '%';
             }
 
             document.onkeydown = function (e) {
-                if (e.keyCode === 32) {
-                    window.location.reload();
+                if (e.keyCode === 32) window.location.reload();
+            };
+
+            var baseOptions = {
+                arena: {
+                    container: $('arena'),
+                    arena: mk.arenas.types.THRONE_ROOM
+                },
+                fighters: [{ name: 'Subzero' }, { name: 'Kano' }],
+                callbacks: {
+                    attack: function (f, o) {
+                        if (o.getName() === 'kano') {
+                            setLife($('player2Life'), o.getLife());
+                        } else {
+                            setLife($('player1Life'), o.getLife());
+                        }
+                    }
                 }
             };
 
-            (function () {
-                
-                var startGame = function () {
+            function startGame(options) {
+                $('mode-select').style.display = 'none';
+                $('loading').style.visibility = 'visible';
+                $('arena').style.visibility = 'hidden';
+                $('utils').style.visibility = 'hidden';
+
+                mk.start(options).ready(function () {
                     $('loading').style.visibility = 'hidden';
                     $('arena').style.visibility = 'visible';
                     $('utils').style.visibility = 'visible';
-                };
-                
-                var options = {
-                    arena: {
-                        container: document.getElementById('arena'),
-                        arena: mk.arenas.types.THRONE_ROOM
-                    },
-                    fighters: [{ name: 'Subzero' }, { name: 'Kano' }],
-                    callbacks: {
-                        attack: function (f, o, l) {
-                            if (o.getName() === 'kano') {
-                                setLife($('player2Life'), o.getLife());
-                            } else {
-                                setLife($('player1Life'), o.getLife());
-                            }
-                        }
+                });
+            }
 
-                    },
-                    isHost: /^yes$/i.test(prompt('Are you going to be host?')),
-                    gameName: prompt('Enter game name:'),
-                    gameType: 'network'
-                };
+            window.startMode = function (type) {
+                startGame(Object.assign({}, baseOptions, { gameType: type }));
+            };
 
-                function startNewGame() {
-                    mk.start(options).ready(function () {
-                        startGame();
-                    });
-                }
-                
-                startNewGame();
-                
-            }());
+            window.showNetworkOptions = function () {
+                $('network-options').style.display = 'block';
+            };
 
+            window.startNetwork = function () {
+                var name = $('gameName').value.trim();
+                if (!name) { alert('Enter a game name.'); return; }
+                var isHost = document.querySelector('input[name="role"]:checked').value === 'host';
+                startGame(Object.assign({}, baseOptions, {
+                    gameType: 'network',
+                    gameName: name,
+                    isHost: isHost
+                }));
+            };
         }());
     </script>
 </body>

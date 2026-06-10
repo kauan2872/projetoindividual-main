@@ -145,9 +145,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
       lastPosition,
       lastMovement,
       framesWithoutMotion = 0,
-      getUserMedia =
-        navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia,
-      URL = w.URL || w.webkitURL || w.mozURL;
+      getUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+        ? navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+        : null;
 
   Movement.init = function (options) {
     var self = this;
@@ -159,16 +159,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     vid.width = Movement.constants.WIDTH;
     vid.height = Movement.constants.HEIGHT;
     this._initCanvases();
-    getUserMedia.call(navigator, { video: true }, function (stream) {
+    if (!getUserMedia) {
+      alert('Webcam API not supported in this browser.');
+      return;
+    }
+    getUserMedia({ video: true }).then(function (stream) {
       if (!initialized) {
         initialized = true;
-        vid.src = URL.createObjectURL(stream);
+        vid.srcObject = stream;
         vid.play();
         self._start();
       }
       initialized = true;
-    }, function () {
-      alert('Access forbidden');
+    }).catch(function () {
+      alert('Webcam access denied or not available.');
     });
   };
 
