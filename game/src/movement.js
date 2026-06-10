@@ -152,13 +152,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   Movement.init = function (options) {
     var self = this;
     Movement.options = options;
+
+    // visible video shown to the user in #webcam-parent
+    var displayVid = document.createElement('video');
+    displayVid.width = Movement.constants.WIDTH;
+    displayVid.height = Movement.constants.HEIGHT;
+    displayVid.style.display = 'block';
+    displayVid.autoplay = true;
+    displayVid.setAttribute('playsinline', '');
+    var container = document.getElementById('webcam-parent');
+    if (container) container.appendChild(displayVid);
+    else document.body.appendChild(displayVid);
+
+    // hidden video used only for pixel processing
     vid = document.createElement('video');
-    document.body.appendChild(vid);
-    vid.style.position = 'absolute';
-    vid.style.visibility = 'hidden';
     vid.width = Movement.constants.WIDTH;
     vid.height = Movement.constants.HEIGHT;
+    vid.style.position = 'absolute';
+    vid.style.visibility = 'hidden';
+    vid.style.pointerEvents = 'none';
+    document.body.appendChild(vid);
+
     this._initCanvases();
+
     if (!getUserMedia) {
       alert('Webcam API not supported in this browser.');
       return;
@@ -166,6 +182,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     getUserMedia({ video: true }).then(function (stream) {
       if (!initialized) {
         initialized = true;
+        displayVid.srcObject = stream;
         vid.srcObject = stream;
         vid.play();
         self._start();
@@ -177,26 +194,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   };
 
   Movement._initCanvases = function () {
-    can = document.createElement('canvas');
-    document.body.appendChild(can);
-    can.id = 'movementjs-main-canvas';
-    can.style.position = 'absolute';
-    can.style.visibility = 'visible';
+    function hiddenCanvas() {
+      var c = document.createElement('canvas');
+      c.style.position = 'absolute';
+      c.style.visibility = 'hidden';
+      c.style.pointerEvents = 'none';
+      document.body.appendChild(c);
+      return c;
+    }
 
-    background = document.createElement('canvas');
-    document.body.appendChild(background);
-    background.style.position = 'absolute';
-    background.style.visibility = 'hidden';
-
-    last = document.createElement('canvas');
-    document.body.appendChild(last);
-    last.style.position = 'absolute';
-    last.style.visibility = 'hidden';
-
-    diffCanvas = document.createElement('canvas');
-    document.body.appendChild(diffCanvas);
-    diffCanvas.style.position = 'absolute';
-    diffCanvas.style.visibility = 'hidden';
+    can        = hiddenCanvas();
+    background = hiddenCanvas();
+    last       = hiddenCanvas();
+    diffCanvas = hiddenCanvas();
 
 //    test1 = document.createElement('canvas');
 //    document.body.appendChild(test1);
