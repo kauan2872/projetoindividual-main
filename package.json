@@ -1,0 +1,11 @@
+{
+  "name": "mkjs",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "postinstall": "npm ci --prefix server --omit=dev",
+    "start": "node server/server.js"
+  }
+}
