@@ -48,6 +48,9 @@
         <button class="mode-btn" onclick="startMode('multiplayer')">Local Multiplayer (same keyboard)</button>
         <button class="mode-btn" onclick="showNetworkOptions()">Network Multiplayer</button>
         <button class="mode-btn" onclick="startMode('webcaminput')">Webcam Input</button>
+        <button class="mode-btn" onclick="showHistory()">Histórico de Partidas</button>
+
+        <div id="match-history" style="display:none; margin-top:16px; width:320px; max-height:200px; overflow-y:auto; border:1px solid #555; padding:8px; text-align:left; font-size:13px;"></div>
 
         <div id="network-options">
             <label>Game name:</label>
@@ -105,6 +108,18 @@
                 if (e.keyCode === 32) window.location.reload();
             };
 
+            var currentMode = '';
+
+            function saveMatch(deadFighter) {
+                var loser = deadFighter.getName();
+                var winnerIndex = loser === 'kano' ? 0 : 1;
+                fetch('/api/matches', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gameName: currentMode, winnerIndex: winnerIndex })
+                }).catch(function () {});
+            }
+
             var baseOptions = {
                 arena: {
                     container: $('arena'),
@@ -118,8 +133,24 @@
                         } else {
                             setLife($('player1Life'), o.getLife());
                         }
+                    },
+                    'game-end': function (deadFighter) {
+                        saveMatch(deadFighter);
                     }
                 }
+            };
+
+            window.showHistory = function () {
+                var box = $('match-history');
+                box.style.display = 'block';
+                box.innerHTML = 'Carregando...';
+                fetch('/api/matches').then(function (r) { return r.json(); }).then(function (rows) {
+                    if (!rows.length) { box.innerHTML = 'Nenhuma partida registrada ainda.'; return; }
+                    box.innerHTML = '<b>Últimas partidas</b><br>' + rows.map(function (m) {
+                        var d = new Date(m.created_at).toLocaleString('pt-BR');
+                        return '#' + m.id + ' — ' + m.game_name + ' · vencedor P' + (m.winner_index + 1) + ' · ' + d;
+                    }).join('<br>');
+                }).catch(function () { box.innerHTML = 'Erro ao carregar histórico.'; });
             };
 
             function startGame(options) {
@@ -136,6 +167,7 @@
             }
 
             window.startMode = function (type) {
+                currentMode = type;
                 startGame(Object.assign({}, baseOptions, { gameType: type }));
             };
 
@@ -147,6 +179,7 @@
                 var name = $('gameName').value.trim();
                 if (!name) { alert('Enter a game name.'); return; }
                 var isHost = document.querySelector('input[name="role"]:checked').value === 'host';
+                currentMode = 'network:' + name;
                 startGame(Object.assign({}, baseOptions, {
                     gameType: 'network',
                     gameName: name,

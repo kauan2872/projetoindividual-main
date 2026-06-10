@@ -3,14 +3,38 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { GameCollection } = require('./games');
-const { initDB, saveMatch } = require('./db');
+const { initDB, saveMatch, getMatches } = require('./db');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const games = new GameCollection();
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'game')));
+
+app.get('/api/matches', async (req, res) => {
+  try {
+    const matches = await getMatches();
+    res.json(matches);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/matches', async (req, res) => {
+  const { gameName, winnerIndex } = req.body || {};
+  if (typeof gameName !== 'string' || !gameName ||
+      (winnerIndex !== 0 && winnerIndex !== 1)) {
+    return res.status(400).json({ error: 'invalid payload' });
+  }
+  try {
+    await saveMatch(gameName, winnerIndex);
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 const PORT = process.env.PORT || 55555;
 
