@@ -1,0 +1,75 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_APP: ghcr.io/${{ github.repository_owner }}/mkjs-app
+  IMAGE_NGINX: ghcr.io/${{ github.repository_owner }}/mkjs-nginx
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push app image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile.prod
+          push: true
+          tags: ${{ env.IMAGE_APP }}:latest,${{ env.IMAGE_APP }}:${{ github.sha }}
+
+      - name: Build and push nginx image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./nginx/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_NGINX }}:latest,${{ env.IMAGE_NGINX }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy app
+        run: |
+          kubectl set image deployment/mkjs-app \
+            mkjs-app=${{ env.IMAGE_APP }}:${{ github.sha }} \
+            -n mkjs
+          kubectl rollout status deployment/mkjs-app -n mkjs
+
+      - name: Deploy nginx
+        run: |
+          kubectl set image deployment/mkjs-nginx \
+            nginx=${{ env.IMAGE_NGINX }}:${{ github.sha }} \
+            -n mkjs
+          kubectl rollout status deployment/mkjs-nginx -n mkjs
