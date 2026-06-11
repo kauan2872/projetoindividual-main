@@ -15,8 +15,8 @@ Jogo de luta estilo Mortal Kombat com Node.js/Express + HTML5 Canvas, modernizad
 ### Subir o ambiente
 
 ```bash
-git clone https://github.com/kauan2872/projetoindividual-main.git
-cd projetoindividual-main
+git clone https://github.com/kauan2872/projetoindividual.git
+cd projetoindividual
 
 docker compose up --build
 ```
