@@ -56,6 +56,10 @@
     </style>
 </head>
 <body>
+    <button id="back-to-menu" onclick="window.location.reload()"
+        style="position:fixed; top:12px; left:12px; z-index:1001; padding:8px 16px; font-family:monospace; font-size:14px; background:#111; color:#fff; border:2px solid #555; cursor:pointer;"
+        onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='#555'">← Menu</button>
+
     <div id="game-over" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); color:#fff; flex-direction:column; align-items:center; justify-content:center; font-family:monospace; z-index:1000;">
         <h2 id="game-over-title" style="letter-spacing:4px; margin-bottom:24px;"></h2>
         <button class="mode-btn" onclick="window.location.reload()">Voltar ao Menu</button>
