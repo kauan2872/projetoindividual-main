@@ -32,13 +32,27 @@
             width: 280px;
         }
         .mode-btn:hover { border-color: #fff; background: #222; }
-        #network-options { display: none; margin-top: 16px; text-align: center; }
-        #network-options input {
+        #network-options {
+            display: none; margin-top: 16px;
+            flex-direction: column; align-items: center;
+        }
+        #network-options.show { display: flex; }
+        #network-options input[type="text"] {
             padding: 8px; font-size: 14px; font-family: monospace;
             background: #111; color: #fff; border: 1px solid #555;
-            width: 200px; margin-bottom: 8px; display: block;
+            width: 200px; margin-bottom: 12px; box-sizing: border-box;
         }
-        #network-options label { font-size: 13px; margin-bottom: 6px; display: block; }
+        #network-options .field-label {
+            font-size: 13px; margin-bottom: 6px; align-self: flex-start;
+        }
+        #network-options .radio-label {
+            font-size: 14px; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; align-self: flex-start;
+        }
+        #network-options .radio-label input[type="radio"] {
+            width: 16px; height: 16px; margin: 0; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -58,10 +72,10 @@
         <div id="match-history" style="display:none; margin-top:16px; width:320px; max-height:200px; overflow-y:auto; border:1px solid #555; padding:8px; text-align:left; font-size:13px;"></div>
 
         <div id="network-options">
-            <label>Game name:</label>
+            <span class="field-label">Game name:</span>
             <input id="gameName" type="text" placeholder="ex: sala1" />
-            <label><input type="radio" name="role" value="host" checked /> Host (create game)</label>
-            <label><input type="radio" name="role" value="guest" /> Guest (join game)</label>
+            <label class="radio-label"><input type="radio" name="role" value="host" checked /> Host (create game)</label>
+            <label class="radio-label"><input type="radio" name="role" value="guest" /> Guest (join game)</label>
             <button class="mode-btn" onclick="startNetwork()" style="margin-top:10px;">Connect</button>
         </div>
     </div>
@@ -180,7 +194,7 @@
             };
 
             window.showNetworkOptions = function () {
-                $('network-options').style.display = 'block';
+                $('network-options').classList.add('show');
             };
 
             window.startNetwork = function () {
