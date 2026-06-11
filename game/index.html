@@ -42,6 +42,11 @@
     </style>
 </head>
 <body>
+    <div id="game-over" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); color:#fff; flex-direction:column; align-items:center; justify-content:center; font-family:monospace; z-index:1000;">
+        <h2 id="game-over-title" style="letter-spacing:4px; margin-bottom:24px;"></h2>
+        <button class="mode-btn" onclick="window.location.reload()">Voltar ao Menu</button>
+    </div>
+
     <div id="mode-select">
         <h2>MK.JS — SELECT MODE</h2>
         <button class="mode-btn" onclick="startMode('basic')">Single Player (vs AI)</button>
@@ -136,6 +141,9 @@
                     },
                     'game-end': function (deadFighter) {
                         saveMatch(deadFighter);
+                        var winner = deadFighter.getName() === 'kano' ? 'Sub-Zero (P1)' : 'Kano (P2)';
+                        $('game-over-title').textContent = winner + ' venceu!';
+                        $('game-over').style.display = 'flex';
                     }
                 }
             };
